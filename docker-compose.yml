@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hidro-api
+    container_name: hidro-api-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - app-data:/var/www
+    networks:
+      - hidro-network
+    ports:
+      - "8001:8001"
+
+  # Nginx Service
+  nginx:
+    image: nginx:alpine
+    container_name: hidro-api-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - app-data:/var/www
+    networks:
+      - hidro-network
+    depends_on:
+      - app
+    # Create nginx config directly in container
+    entrypoint: |
+      /bin/sh -c "
+        echo 'server {
+          listen 80;
+          index index.php index.html;
+          error_log  /var/log/nginx/error.log;
+          access_log /var/log/nginx/access.log;
+          root /var/www/public;
+          location ~ \.php$ {
+            try_files $$uri =404;
+            fastcgi_split_path_info ^(.+\.php)(/.+)$;
+            fastcgi_pass app:9000;
+            fastcgi_index index.php;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $$document_root$$fastcgi_script_name;
+            fastcgi_param PATH_INFO $$fastcgi_path_info;
+          }
+          location / {
+            try_files $$uri $$uri/ /index.php?$$query_string;
+          }
+        }' > /etc/nginx/conf.d/default.conf &&
+        nginx -g 'daemon off;'
+      "
+
+  # MySQL Database Service
+  database:
+    image: mysql:8.0
+    container_name: hidro-api-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: hidro_api
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: hidro_user
+      MYSQL_PASSWORD: hidro_password
+    volumes:
+      - dbdata:/var/lib/mysql
+    ports:
+      - "3307:3306"
+    networks:
+      - hidro-network
+
+# Docker Networks
+networks:
+  hidro-network:
+    driver: bridge
+
+# Volumes
+volumes:
+  app-data:
+    driver: local
+  dbdata:
+    driver: local
