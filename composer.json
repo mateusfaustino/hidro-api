@@ -38,7 +38,10 @@
     "autoload": {
         "psr-4": {
             "App\\": "src/"
-        }
+        },
+        "files": [
+            "src/Domain/Common/AggregateRoot.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {
