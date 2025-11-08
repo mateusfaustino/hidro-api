@@ -85,5 +85,6 @@ O projeto utiliza **Doctrine Migrations**. Os comandos abaixo devem ser executad
 | **`Access denied for user`** | Usuário/senha incorretos ou banco não criado. Rode `docker compose exec database mysql -u root -p` e confira permissões. |
 | **Migrations falham com `Unknown database`** | Garanta que o banco `hidro_api` existe (`docker compose exec database mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS hidro_api;"`). |
 | **Timeout ao conectar** | MySQL pode ainda estar inicializando; aguarde alguns segundos após subir o container. |
+| **`Public Key Retrieval is not allowed` ao testar a conexão** | Na aba **Driver Properties** da conexão, defina `allowPublicKeyRetrieval` como `TRUE`, salve e teste novamente. Essa opção autoriza o DBeaver a solicitar a chave pública do servidor MySQL ao estabelecer a conexão inicial. |
 
 Com esses passos, o ambiente local estará pronto para inspeção e manipulação de dados via DBeaver e para o gerenciamento das migrations com Doctrine.
