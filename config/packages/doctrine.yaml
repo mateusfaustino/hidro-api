@@ -15,21 +15,16 @@ doctrine:
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware
         auto_mapping: true
         mappings:
-            App:
-                type: attribute
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: App
             Domain:
                 type: attribute
                 dir: '%kernel.project_dir%/src/Domain'
-                prefix: 'App\Domain'
+                prefix: 'App\\Domain'
                 alias: Domain
-            RefreshToken:
+            InfrastructureRefreshToken:
                 type: attribute
-                dir: '%kernel.project_dir%/src/Entity'
-                prefix: 'App\Entity'
-                alias: RefreshToken
+                dir: '%kernel.project_dir%/src/Infrastructure/Persistence/Doctrine/Entity'
+                prefix: 'App\\Infrastructure\\Persistence\\Doctrine\\Entity'
+                alias: InfrastructureRefreshToken
 
 when@test:
     doctrine:
