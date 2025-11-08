@@ -2,23 +2,31 @@
 
 namespace App\Tests\Application\Service;
 
-use App\Application\Service\AuthService;
-use App\Domain\Users\User;
+use App\Application\DTO\TokenPairDTO;
+use App\Domain\Auth\TokenPair;
 use PHPUnit\Framework\TestCase;
 
 class AuthServiceTest extends TestCase
 {
-    public function testAuthServiceCreation(): void
+    public function testTokenPairDtoConversion(): void
     {
-        // For now, we'll just test that the class can be instantiated
-        // We'll add more comprehensive tests later
-        $this->assertTrue(true);
-    }
-    
-    public function testUserEntityCreation(): void
-    {
-        $user = new User('1', 'test@example.com', 'Test User');
-        $this->assertEquals('test@example.com', $user->getEmail());
-        $this->assertEquals('Test User', $user->getName());
+        $tokenPair = new TokenPair(
+            accessToken: 'access-token',
+            refreshToken: 'refresh-token',
+            issuedAt: new \DateTimeImmutable('2024-01-01T12:00:00Z'),
+            accessTokenExpiresAt: new \DateTimeImmutable('2024-01-01T12:15:00Z'),
+            refreshTokenExpiresAt: new \DateTimeImmutable('2024-01-08T12:00:00Z'),
+            tokenType: 'Bearer',
+            scopes: ['ROLE_USER']
+        );
+
+        $dto = TokenPairDTO::fromTokenPair($tokenPair);
+
+        self::assertSame('access-token', $dto->accessToken);
+        self::assertSame('refresh-token', $dto->refreshToken);
+        self::assertSame('Bearer', $dto->tokenType);
+        self::assertSame(['ROLE_USER'], $dto->scope);
+        self::assertSame(900, $dto->expiresIn);
+        self::assertSame(604800, $dto->refreshExpiresIn);
     }
 }

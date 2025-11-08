@@ -2,132 +2,137 @@
 
 namespace App\Controller\Api\V1\Auth;
 
-use App\Application\DTO\LoginRequest;
-use App\Application\Service\AuthService;
-use App\Domain\Users\UsersRepository;
+use App\Application\DTO\LoginRequestDTO;
+use App\Application\DTO\RefreshTokenRequestDTO;
+use App\Application\UseCase\AuthenticateUserUseCase;
+use App\Application\UseCase\LogoutUserUseCase;
+use App\Application\UseCase\RefreshAccessTokenUseCase;
+use App\Domain\Auth\Exception\InvalidCredentialsException;
+use App\Domain\Auth\Exception\InvalidRefreshTokenException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Throwable;
 
 #[Route('/api/v1/auth', name: 'auth_')]
 class AuthController extends AbstractController
 {
-    private UsersRepository $usersRepository;
-    private AuthService $authService;
-    private UserPasswordHasherInterface $passwordHasher;
-    
     public function __construct(
-        UsersRepository $usersRepository,
-        AuthService $authService,
-        UserPasswordHasherInterface $passwordHasher
+        private readonly AuthenticateUserUseCase $authenticateUser,
+        private readonly RefreshAccessTokenUseCase $refreshAccessToken,
+        private readonly LogoutUserUseCase $logoutUser,
     ) {
-        $this->usersRepository = $usersRepository;
-        $this->authService = $authService;
-        $this->passwordHasher = $passwordHasher;
     }
-    
+
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function login(Request $request): JsonResponse
     {
-        try {
-            $data = json_decode($request->getContent(), true);
-            $loginRequest = LoginRequest::fromArray($data);
-            
-            // Find user by email
-            $user = $this->usersRepository->findByEmail($loginRequest->email);
-            
-            if (!$user) {
-                return new JsonResponse([
-                    'error' => 'Invalid credentials'
-                ], 401);
-            }
-            
-            // Verify password
-            if (!$this->passwordHasher->isPasswordValid($user, $loginRequest->password)) {
-                return new JsonResponse([
-                    'error' => 'Invalid credentials'
-                ], 401);
-            }
-            
-            // Create tokens
-            $tokens = $this->authService->createTokens($user);
-            
-            return new JsonResponse([
-                'token' => $tokens['token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'expires_in' => $tokens['expires_in']
-            ]);
-        } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => 'Authentication failed'
-            ], 401);
+        $data = $this->decodeRequest($request);
+
+        if (!isset($data['email'], $data['password']) || $data['email'] === '' || $data['password'] === '') {
+            return $this->problem('invalid_payload', 'Invalid payload provided.', 400);
         }
+
+        $loginRequest = LoginRequestDTO::fromArray($data);
+
+        try {
+            $tokenPair = $this->authenticateUser->execute(
+                $loginRequest,
+                $request->getClientIp(),
+                $request->headers->get('User-Agent')
+            );
+        } catch (InvalidCredentialsException $exception) {
+            return $this->problem('invalid_credentials', $exception->getMessage(), 401);
+        } catch (Throwable $exception) {
+            return $this->problem('authentication_failed', 'Unable to authenticate user.', 500);
+        }
+
+        return new JsonResponse($tokenPair->toArray(), 200);
     }
-    
-    #[Route('/refresh', name: 'refresh', methods: ['POST'])]
+
+    #[Route('/token/refresh', name: 'refresh', methods: ['POST'])]
     public function refresh(Request $request): JsonResponse
     {
-        try {
-            $data = json_decode($request->getContent(), true);
-            $refreshToken = $data['refresh_token'] ?? '';
-            
-            if (empty($refreshToken)) {
-                return new JsonResponse([
-                    'error' => 'Refresh token is required'
-                ], 400);
-            }
-            
-            $tokens = $this->authService->refreshToken($refreshToken);
-            
-            if (!$tokens) {
-                return new JsonResponse([
-                    'error' => 'Invalid or expired refresh token'
-                ], 401);
-            }
-            
-            return new JsonResponse([
-                'token' => $tokens['token'],
-                'refresh_token' => $tokens['refresh_token'],
-                'expires_in' => $tokens['expires_in']
-            ]);
-        } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => 'Token refresh failed'
-            ], 401);
+        $data = $this->decodeRequest($request);
+
+        if (!isset($data['refresh_token']) || $data['refresh_token'] === '') {
+            return $this->problem('invalid_payload', 'Refresh token is required.', 400);
         }
+
+        try {
+            $tokenPair = $this->refreshAccessToken->execute(
+                RefreshTokenRequestDTO::fromArray($data),
+                $request->getClientIp(),
+                $request->headers->get('User-Agent')
+            );
+        } catch (InvalidRefreshTokenException $exception) {
+            return $this->problem('invalid_refresh_token', $exception->getMessage(), 401);
+        } catch (Throwable $exception) {
+            return $this->problem('refresh_failed', 'Unable to refresh access token.', 500);
+        }
+
+        return new JsonResponse($tokenPair->toArray(), 200);
     }
-    
+
     #[Route('/logout', name: 'logout', methods: ['POST'])]
     public function logout(Request $request): JsonResponse
     {
-        try {
-            $data = json_decode($request->getContent(), true);
-            $refreshToken = $data['refresh_token'] ?? '';
-            
-            if (empty($refreshToken)) {
-                return new JsonResponse([
-                    'error' => 'Refresh token is required'
-                ], 400);
-            }
-            
-            $result = $this->authService->logout($refreshToken);
-            
-            if (!$result) {
-                return new JsonResponse([
-                    'error' => 'Invalid refresh token'
-                ], 401);
-            }
-            
-            return new JsonResponse([
-                'message' => 'Successfully logged out'
-            ]);
-        } catch (\Exception $e) {
-            return new JsonResponse([
-                'error' => 'Logout failed'
-            ], 500);
+        $data = $this->decodeRequest($request);
+
+        if (!isset($data['refresh_token']) || $data['refresh_token'] === '') {
+            return $this->problem('invalid_payload', 'Refresh token is required.', 400);
         }
+
+        $this->logoutUser->execute(
+            RefreshTokenRequestDTO::fromArray($data),
+            $request->getClientIp()
+        );
+
+        return new JsonResponse(null, 204);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodeRequest(Request $request): array
+    {
+        $content = $request->getContent();
+
+        if ($content === '') {
+            return [];
+        }
+
+        try {
+            $data = json_decode($content, true, 512, JSON_THROW_ON_ERROR);
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (!is_array($data)) {
+            return [];
+        }
+
+        return $data;
+    }
+
+    private function problem(string $type, string $detail, int $status): JsonResponse
+    {
+        return new JsonResponse([
+            'type' => $type,
+            'title' => $this->titleFromType($type),
+            'status' => $status,
+            'detail' => $detail,
+        ], $status);
+    }
+
+    private function titleFromType(string $type): string
+    {
+        return match ($type) {
+            'invalid_credentials' => 'Invalid credentials provided',
+            'invalid_refresh_token' => 'Refresh token invalid',
+            'invalid_payload' => 'Invalid request payload',
+            default => 'Authentication error',
+        };
     }
 }

@@ -24,3 +24,19 @@ services:
         autowire: true
         autoconfigure: true
         public: true
+
+    App\Infrastructure\Security\JwtEncoder:
+        arguments:
+            $privateKeyPath: '%env(resolve:JWT_SECRET_KEY)%'
+            $privateKeyPassphrase: '%env(string:JWT_PASSPHRASE)%'
+            $issuer: '%env(string:JWT_ISSUER)%'
+            $audience: '%env(string:JWT_AUDIENCE)%'
+
+    App\Infrastructure\Security\RefreshTokenHasher:
+        arguments:
+            $pepper: '%env(string:JWT_PASSPHRASE)%'
+
+    App\Infrastructure\Security\JwtTokenManager:
+        arguments:
+            $accessTokenTtl: '%env(int:JWT_TOKEN_TTL)%'
+            $refreshTokenTtl: '%env(int:JWT_REFRESH_TTL)%'
