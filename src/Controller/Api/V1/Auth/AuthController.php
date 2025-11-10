@@ -9,6 +9,7 @@ use App\Application\UseCase\LogoutUserUseCase;
 use App\Application\UseCase\RefreshAccessTokenUseCase;
 use App\Domain\Auth\Exception\InvalidCredentialsException;
 use App\Domain\Auth\Exception\InvalidRefreshTokenException;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,7 @@ class AuthController extends AbstractController
         private readonly AuthenticateUserUseCase $authenticateUser,
         private readonly RefreshAccessTokenUseCase $refreshAccessToken,
         private readonly LogoutUserUseCase $logoutUser,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -43,10 +45,40 @@ class AuthController extends AbstractController
                 $request->headers->get('User-Agent')
             );
         } catch (InvalidCredentialsException $exception) {
+            $this->logger->info('Login failed: Invalid credentials', [
+                'email' => $loginRequest->email,
+                'ip' => $request->getClientIp(),
+                'user_agent' => $request->headers->get('User-Agent'),
+            ]);
             return $this->problem('invalid_credentials', $exception->getMessage(), 401);
         } catch (Throwable $exception) {
+            $this->logger->error('Login failed: Unexpected error', [
+                'email' => $loginRequest->email ?? 'unknown',
+                'exception_class' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTraceAsString(),
+            ]);
+            
+            // Em desenvolvimento, retorna detalhes da exceção
+            if ($this->getParameter('kernel.environment') === 'dev') {
+                return $this->json([
+                    'type' => 'authentication_failed',
+                    'title' => 'Authentication error',
+                    'status' => 500,
+                    'detail' => $exception->getMessage(),
+                    'debug' => [
+                        'exception_class' => get_class($exception),
+                        'file' => $exception->getFile(),
+                        'line' => $exception->getLine(),
+                        'trace' => explode("\n", $exception->getTraceAsString()),
+                    ],
+                ], 500);
+            }
+            
             return $this->problem('authentication_failed', 'Unable to authenticate user.', 500);
-        }
+        }   
 
         return new JsonResponse($tokenPair->toArray(), 200);
     }
@@ -67,8 +99,32 @@ class AuthController extends AbstractController
                 $request->headers->get('User-Agent')
             );
         } catch (InvalidRefreshTokenException $exception) {
+            $this->logger->info('Token refresh failed: Invalid refresh token', [
+                'ip' => $request->getClientIp(),
+            ]);
             return $this->problem('invalid_refresh_token', $exception->getMessage(), 401);
         } catch (Throwable $exception) {
+            $this->logger->error('Token refresh failed: Unexpected error', [
+                'exception_class' => get_class($exception),
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+            ]);
+            
+            if ($this->getParameter('kernel.environment') === 'dev') {
+                return $this->json([
+                    'type' => 'refresh_failed',
+                    'title' => 'Token refresh error',
+                    'status' => 500,
+                    'detail' => $exception->getMessage(),
+                    'debug' => [
+                        'exception_class' => get_class($exception),
+                        'file' => $exception->getFile(),
+                        'line' => $exception->getLine(),
+                    ],
+                ], 500);
+            }
+            
             return $this->problem('refresh_failed', 'Unable to refresh access token.', 500);
         }
 

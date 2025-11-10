@@ -128,6 +128,32 @@ Bem-vindo à documentação técnica do Hidro API! Este índice organiza toda a 
    - Features implementadas
    - Status do projeto
 
+### Módulo de Usuários ⭐ **NOVO!**
+
+1. **[USERS_MODULE_ARCHITECTURE.md](USERS_MODULE_ARCHITECTURE.md)** ⭐
+   - Arquitetura completa do módulo de usuários
+   - Domain Layer: Value Objects, Enums, Exceptions, Entity
+   - Application Layer: DTOs, Use Cases
+   - Infrastructure Layer: Doctrine Repository
+   - Fluxos de trabalho e exemplos práticos
+   - SOLID, Clean Code, DDD aplicados
+   - **Tempo de leitura**: 45 min
+
+2. **[USERS_MODULE_DIAGRAMS.md](USERS_MODULE_DIAGRAMS.md)** ⭐
+   - 15 diagramas Mermaid visuais
+   - Arquitetura em camadas
+   - Fluxos de criação, atualização, ativação
+   - Padrões de design (Repository, Factory, VO, DTO)
+   - Multi-tenant, Roles, Permissões
+   - **Ideal para aprendizado visual**
+
+3. **[USERS_MODULE_QUICK_REFERENCE.md](USERS_MODULE_QUICK_REFERENCE.md)** ⭐
+   - Referência rápida de uso diário
+   - Exemplos de código prontos
+   - Workflows comuns
+   - Factory methods, Use Cases, Repository
+   - **Tempo de leitura**: 10 min
+
 ---
 
 ## 📖 Bibliotecas Externas
@@ -309,7 +335,7 @@ Para adicionar nova documentação:
 
 ### Template de Documentação
 
-```markdown
+```
 # Título do Documento
 
 ## Índice

@@ -45,5 +45,51 @@ services:
             $accessTokenTtl: '%env(int:JWT_TOKEN_TTL)%'
             $refreshTokenTtl: '%env(int:JWT_REFRESH_TTL)%'
 
-    App\Domain\Users\UsersRepository: '@App\Infrastructure\Persistence\Doctrine\DoctrineUsersRepository'
+    App\Domain\Users\UsersRepository: '@App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUsersRepository'
     App\Domain\Auth\TokenManagerInterface: '@App\Infrastructure\Security\JwtTokenManager'
+
+    # User Repository Implementation
+    App\Infrastructure\Persistence\Doctrine\Repository\DoctrineUsersRepository:
+        autowire: true
+        autoconfigure: true
+
+    # User Use Cases
+    App\Application\UseCase\User\CreateSchoolAdminUseCase:
+        arguments:
+            $usersRepository: '@App\Domain\Users\UsersRepository'
+            $passwordHasher: '@Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface'
+
+    App\Application\UseCase\User\CreateGuardianUseCase:
+        arguments:
+            $usersRepository: '@App\Domain\Users\UsersRepository'
+            $passwordHasher: '@Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface'
+
+    App\Application\UseCase\User\GetUserByIdUseCase:
+        arguments:
+            $usersRepository: '@App\Domain\Users\UsersRepository'
+
+    App\Application\UseCase\User\UpdateUserUseCase:
+        arguments:
+            $usersRepository: '@App\Domain\Users\UsersRepository'
+
+    App\Application\UseCase\User\ListUsersBySchoolUseCase:
+        arguments:
+            $usersRepository: '@App\Domain\Users\UsersRepository'
+
+    App\Application\UseCase\User\ActivateUserUseCase:
+        arguments:
+            $usersRepository: '@App\Domain\Users\UsersRepository'
+
+    # User Controller
+    App\Controller\Api\V1\UserController:
+        autowire: true
+        autoconfigure: true
+        public: true
+        tags: ['controller.service_arguments']
+
+    # Event Subscribers
+    App\EventSubscriber\ExceptionSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+        tags:
+            - { name: kernel.event_subscriber }
