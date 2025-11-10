@@ -11,7 +11,8 @@ services:
     restart: unless-stopped
     working_dir: /var/www
     volumes:
-      - app-data:/var/www
+      - .:/var/www
+      - /var/www/vendor
     networks:
       - hidro-network
     ports:
@@ -25,7 +26,8 @@ services:
     ports:
       - "8000:80"
     volumes:
-      - app-data:/var/www
+      - .:/var/www
+      - /var/www/vendor
     networks:
       - hidro-network
     depends_on:
@@ -79,7 +81,5 @@ networks:
 
 # Volumes
 volumes:
-  app-data:
-    driver: local
   dbdata:
     driver: local

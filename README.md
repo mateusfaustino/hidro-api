@@ -333,18 +333,90 @@ Se quiser, eu converto um módulo específico (ex.: `entities`) para **API Platf
 
 ## Running with Docker
 
-1. Build and start the containers:
+### Quick Start (Development Mode with Hot Reload)
+
+**Using the helper script (Recommended):**
+
+```powershell
+# Start containers with hot reload enabled
+.\dev.ps1 start
+
+# Your code changes will be reflected immediately! No rebuild needed!
+```
+
+**Manual commands:**
+
 ```bash
+# First time setup
+docker-compose up -d --build
+docker-compose exec app composer install
+
+# Daily development - just start the containers
 docker-compose up -d
 ```
 
-2. Access the application:
-- API: http://localhost:8000
-- Database: localhost:3307 (instead of default 3306 to avoid conflicts)
+### 🚀 Hot Reload Configuration
 
-3. Stopping the containers:
-```bash
-docker-compose down
+**Your code is now mapped to the container!** Any changes you make will be immediately available without rebuilding.
+
+✅ **What this means:**
+- Edit PHP files → Changes reflect instantly
+- No more waiting for `docker-compose up --build`
+- Faster development cycle
+
+📖 **Full documentation:** See [`dev-docs/DOCKER_HOT_RELOAD.md`](dev-docs/DOCKER_HOT_RELOAD.md)
+
+### Access Points
+
+- **API**: http://localhost:8000
+- **Database**: localhost:3307 (MySQL 8.0)
+- **PHP-FPM**: localhost:8001 (internal)
+
+### Development Helper Script
+
+Use `dev.ps1` for common tasks:
+
+```powershell
+.\dev.ps1 start          # Start containers
+.\dev.ps1 stop           # Stop containers
+.\dev.ps1 restart        # Restart containers
+.\dev.ps1 rebuild        # Rebuild (only when needed)
+.\dev.ps1 logs           # View logs
+.\dev.ps1 shell          # Open bash in container
+.\dev.ps1 composer install  # Run composer commands
+.\dev.ps1 cache-clear    # Clear Symfony cache
+.\dev.ps1 test           # Run tests
+.\dev.ps1 migrate        # Run migrations
+.\dev.ps1 status         # Check container status
+.\dev.ps1 help           # Show all commands
+```
+
+### When to Rebuild
+
+You **only** need to rebuild when:
+
+1. ✅ Dockerfile changes (new PHP extensions, system packages)
+2. ✅ Composer dependencies added/updated
+3. ✅ Environment variables changed
+
+```powershell
+# Rebuild when needed
+.\dev.ps1 rebuild
+# or
+docker-compose up -d --build
+```
+
+### Managing Dependencies
+
+```powershell
+# Install dependencies
+.\dev.ps1 composer install
+
+# Add new package
+.\dev.ps1 composer require vendor/package
+
+# Update dependencies
+.\dev.ps1 composer update
 ```
 
 ### Docker Services
@@ -353,38 +425,58 @@ docker-compose down
 - **nginx**: Web server exposing port 8000
 - **database**: MySQL 8.0 database with volume persistence (exposed on port 3307)
 
-### Environment Variables
+### Common Commands
 
-Check the [docker-compose.yml](file:///c:/dev/PHP/hidro-api/docker-compose.yml) file for database credentials and update them as needed.
+```powershell
+# Clear Symfony cache (if routes/config changed)
+.\dev.ps1 cache-clear
 
-### Development Workflow
+# View real-time logs
+.\dev.ps1 logs
 
-The application code is built into the Docker image during the build process. To make changes:
+# Access container shell
+.\dev.ps1 shell
 
-1. Modify your code
-2. Rebuild the containers:
-   ```bash
-   docker-compose up -d --build
-   ```
+# Run migrations
+.\dev.ps1 migrate
 
-For a faster development workflow on Windows, consider using WSL 2 with Docker Desktop.
+# Run tests
+.\dev.ps1 test
+```
 
 ### Troubleshooting
 
-If you encounter the error "error while creating mount source path", try these solutions:
+#### Changes not reflecting?
 
-1. **Check Docker Desktop File Sharing Settings**:
-   - Open Docker Desktop
-   - Go to Settings > Resources > File Sharing
-   - Make sure your project directory is added to the file sharing list
+1. Clear Symfony cache:
+   ```powershell
+   .\dev.ps1 cache-clear
+   ```
 
-2. **Use WSL 2 Backend** (Recommended):
-   - Open Docker Desktop
-   - Go to Settings > General
-   - Check "Use the WSL 2 based engine"
-   - Restart Docker Desktop
+2. Restart containers:
+   ```powershell
+   .\dev.ps1 restart
+   ```
 
-3. **Run Docker from WSL 2 Terminal**:
-   - Install WSL 2: `wsl --install`
-   - Install a Linux distribution (like Ubuntu) from the Microsoft Store
-   - Run your Docker commands from the WSL terminal
+#### Composer install fails?
+
+```powershell
+docker-compose exec app php -d memory_limit=-1 /usr/bin/composer install
+```
+
+#### Slow performance on Windows?
+
+- Use WSL 2 for better Docker performance
+- Exclude project directory from antivirus scans
+- The `/vendor` directory is kept in container for performance
+
+### Environment Variables
+
+Check the [`docker-compose.yml`](docker-compose.yml) file for database credentials and update them as needed.
+
+### Performance Tips
+
+1. **Use WSL 2** on Windows for significantly better I/O performance
+2. **Exclude from antivirus** - Add project folder to Windows Defender exclusions
+3. **Keep vendor in container** - Already configured for better performance
+4. **Use development compose** - `compose.dev.yaml` for auto-dependency installation
