@@ -49,6 +49,16 @@ Não acoplado. Consumidores típicos: SPA, mobile, integradores externos. (A ant
 
 ---
 
+## Configuração do Ambiente
+
+1. Copie o arquivo de exemplo e ajuste as variáveis conforme necessário:
+   ```bash
+   cp .env.example .env
+   ```
+2. Atualize os valores sensíveis (por exemplo, `APP_SECRET` e `JWT_PASSPHRASE`) antes de iniciar a aplicação.
+
+---
+
 ## 3) Arquitetura da API
 
 ### 3.1 Camadas (Arquitetura Hexagonal + DDD)
