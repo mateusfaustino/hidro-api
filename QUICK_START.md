@@ -2,7 +2,21 @@
 
 ## First Time Setup
 
-### 1. Start Docker Containers
+### 1. Configure Environment
+
+```powershell
+# Copy environment file (if not exists)
+if (-not (Test-Path ".env")) {
+    Copy-Item ".env.example" ".env"
+}
+
+# Review and adjust .env file if needed
+# Default values are configured for Docker
+```
+
+> ✅ **Default .env is already configured** for Docker with correct database credentials!
+
+### 2. Start Docker Containers
 
 ```powershell
 # Using the helper script (recommended)
@@ -12,15 +26,40 @@
 docker-compose up -d --build
 ```
 
-### 2. Install Dependencies
+### 2. Start Docker Containers
 
 ```powershell
-.\dev.ps1 composer install
+# Using the helper script (recommended)
+.\dev.ps1 start
+
+# Or manually
+docker-compose up -d --build
 ```
 
-### 3. Run Migrations
+### 3. Run Initial Setup
 
 ```powershell
+# One command to setup everything!
+.\dev.ps1 setup
+
+# This will:
+# - Install composer dependencies
+# - Generate JWT keys
+# - Run database migrations
+```
+
+OR manually:
+
+```powershell
+# Install dependencies
+.\dev.ps1 composer install
+
+# Generate JWT keys
+.\dev.ps1 shell
+php bin/console lexik:jwt:generate-keypair
+exit
+
+# Run migrations
 .\dev.ps1 migrate
 ```
 
@@ -33,6 +72,36 @@ curl http://localhost:8000/api/v1/health
 # Test endpoint
 curl http://localhost:8000/api/v1/hello
 ```
+
+## Database Connection
+
+### View Connection Info
+
+```powershell
+.\dev.ps1 db-connect
+```
+
+### Connect from Host (DBeaver, MySQL Workbench, etc.)
+
+```
+Host:     127.0.0.1
+Port:     3307
+Database: hidro_api
+User:     hidro_user
+Password: hidro_password
+```
+
+### Connection String (from .env)
+
+```env
+# Inside Docker containers
+DATABASE_URL="mysql://hidro_user:hidro_password@database:3306/hidro_api?serverVersion=8.0&charset=utf8mb4"
+
+# From host machine
+DATABASE_URL="mysql://hidro_user:hidro_password@127.0.0.1:3307/hidro_api?serverVersion=8.0&charset=utf8mb4"
+```
+
+> 📖 See [`dev-docs/ENVIRONMENT_VARIABLES.md`](dev-docs/ENVIRONMENT_VARIABLES.md) for complete environment documentation.
 
 ## Daily Development
 
@@ -175,11 +244,15 @@ curl http://localhost:8000/api/v1/protected `
 ```powershell
 # Show all available commands
 .\dev.ps1 help
+
+# Database connection info
+.\dev.ps1 db-connect
 ```
 
 ## Documentation
 
 - 📖 **Full Docker Guide**: [`dev-docs/DOCKER_HOT_RELOAD.md`](dev-docs/DOCKER_HOT_RELOAD.md)
+- 📖 **Environment Variables**: [`dev-docs/ENVIRONMENT_VARIABLES.md`](dev-docs/ENVIRONMENT_VARIABLES.md)
 - 📖 **API Documentation**: [`README.md`](README.md)
 - 📖 **Architecture**: [`dev-docs/ARCHITECTURE_SUMMARY.md`](dev-docs/ARCHITECTURE_SUMMARY.md)
 - 📖 **JWT Auth**: [`dev-docs/JWT_AUTH_IMPLEMENTATION_COMPLETE.md`](dev-docs/JWT_AUTH_IMPLEMENTATION_COMPLETE.md)

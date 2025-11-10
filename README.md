@@ -57,6 +57,45 @@ Não acoplado. Consumidores típicos: SPA, mobile, integradores externos. (A ant
    ```
 2. Atualize os valores sensíveis (por exemplo, `APP_SECRET` e `JWT_PASSPHRASE`) antes de iniciar a aplicação.
 
+> 📖 **Documentação Completa**: [`dev-docs/ENVIRONMENT_VARIABLES.md`](dev-docs/ENVIRONMENT_VARIABLES.md)
+
+---
+
+## Database Migrations
+
+O projeto utiliza **DoctrineMigrationsBundle** para versionamento seguro do schema do banco de dados.
+
+### Comandos Básicos
+
+```bash
+# Ver status das migrations
+php bin/console doctrine:migrations:status
+
+# Gerar migration automaticamente (após modificar Entities)
+php bin/console doctrine:migrations:diff
+
+# Executar migrations pendentes
+php bin/console doctrine:migrations:migrate
+```
+
+### Documentação de Migrations
+
+- 📖 **Guia Completo**: [`dev-docs/GUIA_MIGRATIONS.md`](dev-docs/GUIA_MIGRATIONS.md) - Tutorial detalhado em português
+- ⚡ **Referência Rápida**: [`dev-docs/MIGRATIONS_QUICK_REFERENCE.md`](dev-docs/MIGRATIONS_QUICK_REFERENCE.md) - Comandos e workflows
+- 📊 **Diagramas Visuais**: [`dev-docs/MIGRATIONS_DIAGRAMS.md`](dev-docs/MIGRATIONS_DIAGRAMS.md) - Fluxos e arquitetura
+
+### Com Docker
+
+```powershell
+# Ver status
+.\dev.ps1 shell
+php bin/console doctrine:migrations:status
+exit
+
+# Executar migrations
+.\dev.ps1 migrate
+```
+
 ---
 
 ## 3) Arquitetura da API
